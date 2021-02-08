@@ -32,7 +32,7 @@ public class GpgSignerWorkflow {
     public String homedir = "gpg-homedir";
 
     /**
-     * Public & Private keys
+     * Public &amp; Private keys
      * <p>
      * Will be imported when workflow (re-)initialize
      */
