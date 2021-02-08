@@ -1,0 +1,74 @@
+/*
+ * Copyright (c) 2018-2021 Karlatemp. All rights reserved.
+ * @author Karlatemp <karlatemp@vip.qq.com> <https://github.com/Karlatemp>
+ *
+ * PublicationSign/PublicationSign/build.gradle
+ *
+ * Use of this source code is governed by the MIT license that can be found via the following link.
+ *
+ * https://github.com/Karlatemp/PublicationSign/blob/master/LICENSE
+ */
+
+import org.gradle.kotlin.dsl.KotlinDependencyExtensionsKt
+import org.gradle.kotlin.dsl.ProjectExtensionsKt
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.4.20'
+    id 'java-gradle-plugin'
+    id 'com.gradle.plugin-publish' version '0.12.0'
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'io.github.karlatemp'
+version '1.0.0'
+description 'Fast setup publication artifact sign'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    compileOnly(gradleApi())
+    compileOnly(localGroovy())
+    compileOnly(ProjectExtensionsKt.gradleKotlinDsl(project))
+
+
+    compileOnly(KotlinDependencyExtensionsKt.kotlin(dependencies, "stdlib", null))
+    compileOnly(KotlinDependencyExtensionsKt.kotlin(dependencies, "gradle-plugin-api", null)) {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
+    }
+    compileOnly(KotlinDependencyExtensionsKt.kotlin(dependencies, "gradle-plugin", null)) {
+        exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
+    }
+
+    compile 'org.jetbrains:annotations:19.0.0'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+gradlePlugin {
+    //noinspection GroovyAssignabilityCheck
+    plugins {
+        create("publicationSign") {
+            id = "io.github.karlatemp.publication-sign"
+            displayName = "Publication Sign"
+            description = project.description
+            implementationClass = "io.github.karlatemp.publicationsign.PublicationSignPlugin"
+        }
+    }
+}
+
+pluginBundle {
+    website = 'https://github.com/Karlatemp/PublicationSign'
+    vcsUrl = 'https://github.com/Karlatemp/PublicationSign.git'
+    description = 'A gradle for fast config publications artifact sign'
+    tags = ['publish', 'sign', 'maven']
+}
+
