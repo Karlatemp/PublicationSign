@@ -115,7 +115,7 @@ public class PublicationSignPlugin implements Plugin<Project> {
                 ObjectFactory objectFactory = cast(objectFactoryField.get(publishPlugin));
                 objectFactoryField.set(publishPlugin, new MPObjectFactory(objectFactory, new PostInit(project)));
                 if (logger.isInfoEnabled()) {
-                    logger.info("[MavenPublishPlugin] MavenPublishPlugin injected...");
+                    logger.info("[PublicationSign] MavenPublishPlugin injected...");
                 }
 
             } catch (Exception e) {
