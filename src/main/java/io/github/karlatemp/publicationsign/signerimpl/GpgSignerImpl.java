@@ -16,11 +16,12 @@ import io.github.karlatemp.publicationsign.signer.AbstractArtifactSigner;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class GpgSignerImpl extends AbstractArtifactSigner {
     private final GpgSignerWorkflow workflow;
@@ -87,16 +88,38 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
         if (logger != null && logger.isInfoEnabled()) {
             logger.info("Processing `" + String.join(" ", cmd0) + "`");
         }
+        File out = new File(workflow.workingDir, "gpg-" + System.currentTimeMillis() + "-" + UUID.randomUUID() + ".log");
+        out.createNewFile();
 
         int response = new ProcessBuilder()
                 .directory(workflow.workingDir)
                 .command(cmd0)
-                .inheritIO()
+                .redirectError(out)
+                .redirectOutput(out)
                 .start()
                 .waitFor();
-        if (response != 0) {
-            throw new RuntimeException("GPG command response " + response + " != 0");
+        if ((logger != null && logger.isInfoEnabled()) || response != 0) {
+            Thread.sleep(1000L);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(out), StandardCharsets.UTF_8))) {
+                while (true) {
+                    String line = reader.readLine();
+                    if (line == null) break;
+                    if (logger == null) {
+                        System.out.println(line);
+                    } else {
+                        if (response != 0) {
+                            logger.error(line);
+                        } else {
+                            logger.info(line);
+                        }
+                    }
+                }
+            }
         }
+        if (response != 0) {
+            throw new RuntimeException("GPG command response " + response + " != 0, '" + String.join(" ", cmd0) + "'");
+        }
+        out.delete();
     }
 
     @Override
