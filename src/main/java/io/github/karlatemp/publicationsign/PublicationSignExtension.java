@@ -39,11 +39,12 @@ public class PublicationSignExtension {
         signerAllocator = closure::call;
     }
 
-    public ArtifactSigner newGpgSigner(Project project) throws Exception {
+
+    public ArtifactSigner newGpgSigner(Project current, Project project) throws Exception {
         if (signerAllocator != null)
             return signerAllocator.newGpgSigner(project);
 
-        Project parent = project.getParent();
+        Project parent = current.getParent();
         if (parent == null) return null;
 
         PublicationSignExtension extensionParent;
@@ -52,7 +53,11 @@ public class PublicationSignExtension {
         } catch (Exception ignored) {
             return null;
         }
-        return extensionParent.newGpgSigner(project);
+        return extensionParent.newGpgSigner(parent, project);
+    }
+
+    public ArtifactSigner newGpgSigner(Project project) throws Exception {
+        return newGpgSigner(project, project);
     }
 
     public void setupWorkflow(Action<? super GpgSignerWorkflow> configure) {
