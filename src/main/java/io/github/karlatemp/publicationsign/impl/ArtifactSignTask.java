@@ -32,6 +32,7 @@ import javax.inject.Inject;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -53,6 +54,7 @@ public class ArtifactSignTask extends DefaultTask {
     private final DefaultMavenPublication publication;
     private DefaultPublicationArtifactSet<SignedMavenArtifact> signedArtifacts;
     private PublicationArtifactSet<? extends MavenArtifact> publicationArtifactSet;
+    private boolean postInit;
 
     @Override
     public @NotNull TaskDependency getMustRunAfter() {
@@ -101,6 +103,7 @@ public class ArtifactSignTask extends DefaultTask {
 
     @TaskAction
     protected void invoke() throws Exception {
+        postInit();
         Logger logger = getLogger();
         if (logger.isInfoEnabled()) {
             logger.info("Signing artifacts for " + publication.getName());
@@ -108,6 +111,7 @@ public class ArtifactSignTask extends DefaultTask {
         ArtifactSigner signer = signer();
         if (signer == null) {
             logger.error("GPG Signer not found. Skip");
+            return;
         }
 
         if (signedArtifacts == null) {
@@ -126,14 +130,8 @@ public class ArtifactSignTask extends DefaultTask {
 
             ArtifactSigner.SignResult result = signer.doSign(logger, artifactFile);
             if (result == null) continue;
-            SignedMavenArtifact signedMavenArtifact = new SignedMavenArtifact(
-                    artifact,
-                    TaskDependencyInternal.EMPTY,
-                    result
-            );
-            signedArtifacts.add(signedMavenArtifact);
             if (logger.isDebugEnabled()) {
-                logger.debug("Added signed artifact " + signedMavenArtifact);
+                logger.debug("Added signed artifact " + result.getSignFile());
             }
         }
     }
@@ -143,16 +141,31 @@ public class ArtifactSignTask extends DefaultTask {
         return this.publicationArtifactSet.getFiles();
     }
 
+    private final Set<File> signatures = new HashSet<>();
+
     @OutputFiles
     public Set<File> getSignatures() throws Exception {
-        Set<File> signatures = new HashSet<>();
+        postInit();
+        return signatures;
+    }
+
+    private void postInit() throws Exception {
+        if (postInit) return;
+        postInit = true;
         ArtifactSigner signer = signer();
+        if(signer == null) return;
 
         for (MavenArtifact artifact : publicationArtifactSet) {
-            File sf = signer.getSignFile(artifact.getFile());
-            if (sf != null) signatures.add(sf);
+            ArtifactSigner.SignResult sf = signer.getSignFile(artifact.getFile());
+            if (sf != null) {
+                signedArtifacts.add(new SignedMavenArtifact(
+                        artifact,
+                        TaskDependencyInternal.EMPTY,
+                        sf
+                ));
+                signatures.add(sf.getSignFile());
+            }
         }
-        return signatures;
     }
 
     public static void setup(Project project, DefaultMavenPublication publication) {

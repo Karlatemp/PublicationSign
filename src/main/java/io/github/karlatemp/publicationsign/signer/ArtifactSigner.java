@@ -17,7 +17,7 @@ import org.gradle.api.logging.Logger;
 import java.io.File;
 
 public interface ArtifactSigner {
-    File getSignFile(File file);
+    SignResult getSignFile(File file);
 
     interface SignResult {
         File getArtifactFile();
