@@ -68,9 +68,17 @@ configure<io.github.karlatemp.publicationsign.PublicationSignExtension> {
 
 See [key-gen.sh](./key-gen.sh)
 
-#### CI write keys
+#### CI
 ```yaml
+name: Publish
 
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    runs-on: ubuntu-latest
+    env:
+      WORK_IN_CI: true
+    steps:
       - name: Keys setup
         shell: bash
         run: |
@@ -80,6 +88,10 @@ See [key-gen.sh](./key-gen.sh)
         env:
           GPG_PRIVATE: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PUBLIC_: ${{ secrets.GPG_PUBLIC_KEY }}
+      - name: Build
+        run: ./gradlew build
+      - name: Publish
+        run: ./gradlew publish
 
 ```
 

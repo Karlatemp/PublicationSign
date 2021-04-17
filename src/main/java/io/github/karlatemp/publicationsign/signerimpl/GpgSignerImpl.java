@@ -31,6 +31,9 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
     }
 
     public static File getDefaultWorkdir(Project project) {
+        if (System.getenv("WORK_IN_CI") != null) {
+            return new File("/tmp/ci", project.getName()).getAbsoluteFile();
+        }
         return new File(project.getBuildDir(), "gpg-sign");
     }
 
