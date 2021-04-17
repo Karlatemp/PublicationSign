@@ -52,12 +52,22 @@ public class MPMavenPublication extends DefaultMavenPublication {
     @Lazy
     public Project project;
     private ArtifactSignTask artifactSignTask;
+    private ArtifactSignTask metadataSignTask;
     private Runnable onGpgSignTaskComplete;
 
-    public void completeSignArtifactTask(ArtifactSignTask artifactSignTask) {
+    public void completeSignArtifactTask(ArtifactSignTask artifactSignTask, ArtifactSignTask metadataSignTask) {
         this.artifactSignTask = artifactSignTask;
+        this.metadataSignTask = metadataSignTask;
         onGpgSignTaskComplete.run();
         onGpgSignTaskComplete = null;
+    }
+
+    private static PublicationArtifactSet<?> getSet(DefaultMavenPublication p, String name) throws Exception {
+
+        Field publishableArtifactsField = DefaultMavenPublication.class.getDeclaredField(name);
+        publishableArtifactsField.setAccessible(true);
+        return (PublicationArtifactSet<?>) publishableArtifactsField.get(p);
+
     }
 
     @Inject
@@ -76,14 +86,16 @@ public class MPMavenPublication extends DefaultMavenPublication {
     ) throws Exception {
         super(name, projectIdentity, mavenArtifactParser, instantiator, objectFactory, projectDependencyResolver, fileCollectionFactory, immutableAttributesFactory, collectionCallbackActionDecorator, versionMappingStrategy, platformSupport);
 
-        Field publishableArtifactsField = DefaultMavenPublication.class.getDeclaredField("publishableArtifacts");
-        publishableArtifactsField.setAccessible(true);
-        PublicationArtifactSet<?> publicationArtifactSet = (PublicationArtifactSet<?>) publishableArtifactsField.get(this);
+        PublicationArtifactSet<?> publicationArtifactSet = getSet(this, "publishableArtifacts");
+        PublicationArtifactSet<?> mainArtifacts = getSet(this, "mainArtifacts");
+        PublicationArtifactSet<?> derivedArtifacts = getSet(this, "derivedArtifacts");
+        PublicationArtifactSet<?> metadataArtifacts = getSet(this, "metadataArtifacts");
 
         FileCollectionInternal files000 = fileCollectionFactory.create(new AbstractTaskDependency() {
             @Override
             public void visitDependencies(@NotNull TaskDependencyResolveContext context) {
                 context.add(artifactSignTask);
+                context.add(metadataSignTask);
             }
         }, new MinimalFileSet() {
             @Override
@@ -110,9 +122,11 @@ public class MPMavenPublication extends DefaultMavenPublication {
         }));
         this.signedArtifacts = signedArtifacts;
 
-        //noinspection CodeBlock2Expr
         onGpgSignTaskComplete = () -> {
-            artifactSignTask.hookArtifacts(signedArtifacts, publicationArtifactSet);
+            metadataSignTask.hookArtifacts(signedArtifacts, metadataArtifacts);
+            artifactSignTask.hookArtifacts(signedArtifacts, new CompositePublicationArtifactSet<>(MavenArtifact.class, Cast.uncheckedCast(new PublicationArtifactSet<?>[]{
+                    mainArtifacts, derivedArtifacts
+            })));
         };
     }
 
