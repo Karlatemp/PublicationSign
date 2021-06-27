@@ -57,6 +57,7 @@ public class ArtifactSignTask extends DefaultTask {
     private boolean postInit;
 
     @Override
+    @Internal
     public @NotNull TaskDependency getMustRunAfter() {
         return new AbstractTaskDependency() {
             @Override
