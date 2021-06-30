@@ -75,3 +75,10 @@ pluginBundle {
     tags = ['publish', 'sign', 'maven']
 }
 
+({
+    def buildScan = extensions.findByName('buildScan')
+    if (buildScan != null) {
+        buildScan.termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        buildScan.termsOfServiceAgree = "yes"
+    }
+})();
