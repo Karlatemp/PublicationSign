@@ -21,7 +21,7 @@ plugins {
 }
 
 group 'io.github.karlatemp'
-version '1.2.2'
+version '1.3.1'
 description 'Fast setup publication artifact sign'
 
 repositories {
