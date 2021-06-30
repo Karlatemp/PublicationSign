@@ -44,13 +44,15 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
             workingDir = new File("/tmp/publication-sign-ci");
         }
         if (workingDir == null) {
-            workingDir = workflow.workingDir = getDefaultWorkdir(project);
+            workingDir = getDefaultWorkdir(project);
         }
+        workflow.workingDir = workingDir;
         workingDir.mkdirs();
         String homedir = workflow.homedir;
         if (CIEnvDetect.isCI()) { // Force override
             homedir = "homedir";
         }
+        workflow.homedir = homedir;
         if (homedir == null) {
             return; // disabled sandbox
         }
