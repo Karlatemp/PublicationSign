@@ -49,7 +49,8 @@ public class SignerTest {
                         "}\n\n" +
                         "publicationSign {\n" +
                         "    setupWorkflow { workflow ->\n" +
-                        "        workflow.fastSetup(\"../testing-keys/keys.pub\", \"../testing-keys/keys.pri\")\n" +
+                        "        workflow.addKey(new File(project.projectDir.getParentFile(), \"testing-keys/keys.pub\"))\n" +
+                        "        workflow.addKey(new File(project.projectDir.getParentFile(), \"testing-keys/keys.pri\"))\n" +
                         "    }\n" +
                         "}\n",
                 StandardCharsets.UTF_8

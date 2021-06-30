@@ -21,4 +21,4 @@ jobs:
         run: chmod -R 777 *
 
       - name: Build project
-        run: ./gradlew build --scan
+        run: ./gradlew build --scan --info
