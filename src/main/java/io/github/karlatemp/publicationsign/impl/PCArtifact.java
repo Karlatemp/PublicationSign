@@ -2,7 +2,7 @@
  * Copyright (c) 2018-2021 Karlatemp. All rights reserved.
  * @author Karlatemp <karlatemp@vip.qq.com> <https://github.com/Karlatemp>
  *
- * PublicationSign/PublicationSign.main/SignedMavenArtifact.java
+ * PublicationSign/PublicationSign.main/PCArtifact.java
  *
  * Use of this source code is governed by the MIT license that can be found via the following link.
  *
@@ -11,44 +11,37 @@
 
 package io.github.karlatemp.publicationsign.impl;
 
-import io.github.karlatemp.publicationsign.signer.ArtifactSigner;
 import org.gradle.api.internal.tasks.TaskDependencyInternal;
-import org.gradle.api.publish.maven.MavenArtifact;
 import org.gradle.api.publish.maven.internal.artifact.AbstractMavenArtifact;
 
 import java.io.File;
 
-public class SignedMavenArtifact extends AbstractMavenArtifact {
-    private final MavenArtifact delegate;
-    private final TaskDependencyInternal tasks;
-    private final ArtifactSigner.SignResult result;
+public class PCArtifact extends AbstractMavenArtifact {
+    final AbstractMavenArtifact delegate;
+    private final File signFile;
+    private final String signExt;
+    private final TaskDependencyInternal task;
 
-    public SignedMavenArtifact(
-            MavenArtifact delegate,
-            TaskDependencyInternal task,
-            ArtifactSigner.SignResult result
+    public PCArtifact(
+            AbstractMavenArtifact delegate,
+            File signFile,
+            String signExt,
+            TaskDependencyInternal task
     ) {
         this.delegate = delegate;
-        this.tasks = task;
-        this.result = result;
-    }
-
-    public ArtifactSigner.SignResult getResult() {
-        return result;
-    }
-
-    public MavenArtifact getDelegate() {
-        return delegate;
+        this.signFile = signFile;
+        this.signExt = signExt;
+        this.task = task;
     }
 
     @Override
     public File getFile() {
-        return result.getSignFile();
+        return signFile;
     }
 
     @Override
     protected String getDefaultExtension() {
-        return delegate.getExtension() + "." + result.getSignExtension();
+        return delegate.getExtension() + "." + signExt;
     }
 
     @Override
@@ -58,11 +51,11 @@ public class SignedMavenArtifact extends AbstractMavenArtifact {
 
     @Override
     protected TaskDependencyInternal getDefaultBuildDependencies() {
-        return tasks;
+        return task;
     }
 
     @Override
     public boolean shouldBePublished() {
-        return true;
+        return delegate.shouldBePublished();
     }
 }

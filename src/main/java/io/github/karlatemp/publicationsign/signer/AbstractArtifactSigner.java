@@ -58,11 +58,21 @@ public abstract class AbstractArtifactSigner implements ArtifactSigner {
 
     protected abstract String getSignFileExtension(File artifactFile);
 
+    @Override
+    public String getSignExt(File file) {
+        return getSignFileExtension(file);
+    }
+
     protected File getSignFile(File artifactFile, String signExt) {
         return new File(artifactFile.getPath() + "." + signExt);
     }
 
     protected abstract void sign0(Logger logger, File artifactFile, File signFile) throws Exception;
+
+    @Override
+    public File signFile(Logger logger, File artifactFile) {
+        return getSignFile(artifactFile, getSignFileExtension(artifactFile));
+    }
 
     @Override
     public SignResult getSignFile(File file) {

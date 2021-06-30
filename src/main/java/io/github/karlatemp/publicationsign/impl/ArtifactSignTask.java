@@ -14,81 +14,139 @@ package io.github.karlatemp.publicationsign.impl;
 import io.github.karlatemp.publicationsign.PublicationSignExtension;
 import io.github.karlatemp.publicationsign.signer.ArtifactSigner;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.DomainObjectSet;
 import org.gradle.api.Project;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.tasks.AbstractTaskDependency;
+import org.gradle.api.Task;
 import org.gradle.api.internal.tasks.TaskDependencyInternal;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.logging.Logger;
-import org.gradle.api.publish.internal.DefaultPublicationArtifactSet;
-import org.gradle.api.publish.internal.PublicationArtifactSet;
 import org.gradle.api.publish.maven.MavenArtifact;
+import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.maven.internal.artifact.AbstractMavenArtifact;
 import org.gradle.api.publish.maven.internal.publication.DefaultMavenPublication;
-import org.gradle.api.tasks.*;
-import org.jetbrains.annotations.NotNull;
+import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.OutputFiles;
+import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
-@SuppressWarnings("unchecked")
 public class ArtifactSignTask extends DefaultTask {
-    static final Method artifactsToBePublishedMethod;
+    private static Field DMP$metadataArtifacts;
+    private static Field DMP$derivedArtifacts;
+    private final DefaultMavenPublication mp;
 
-    static {
-        try {
-            Method artifactsToBePublished =
-                    DefaultMavenPublication.class.getDeclaredMethod("artifactsToBePublished");
-            artifactsToBePublished.setAccessible(true);
-            artifactsToBePublishedMethod = artifactsToBePublished;
-        } catch (NoSuchMethodException e) {
-            throw new ExceptionInInitializerError(e);
+    private static void setupFields() throws Throwable {
+        if (DMP$derivedArtifacts == null) {
+            DMP$derivedArtifacts = DefaultMavenPublication.class.getDeclaredField("derivedArtifacts");
+            DMP$derivedArtifacts.setAccessible(true);
+        }
+        if (DMP$metadataArtifacts == null) {
+            DMP$metadataArtifacts = DefaultMavenPublication.class.getDeclaredField("metadataArtifacts");
+            DMP$metadataArtifacts.setAccessible(true);
         }
     }
 
-    private final DefaultMavenPublication publication;
-    private DefaultPublicationArtifactSet<SignedMavenArtifact> signedArtifacts;
-    private PublicationArtifactSet<? extends MavenArtifact> publicationArtifactSet;
-    private boolean postInit;
+    private final Set<PCArtifact> signArtifacts = new HashSet<>();
 
-    @Override
-    @Internal
-    public @NotNull TaskDependency getMustRunAfter() {
-        return new AbstractTaskDependency() {
+    @SuppressWarnings("unchecked")
+    @Inject
+    public ArtifactSignTask(
+            MavenPublication publication
+    ) throws Throwable {
+        if (!(publication instanceof DefaultMavenPublication)) {
+            throw new UnsupportedOperationException(publication.getClass().toString());
+        }
+        setupFields();
+        DefaultMavenPublication mPublication = (DefaultMavenPublication) publication;
+        this.mp = mPublication;
+        DomainObjectSet<MavenArtifact> derived = (DomainObjectSet<MavenArtifact>) DMP$derivedArtifacts.get(mPublication);
+        TaskDependencyInternal TASK_THIS = new TaskDependencyInternal() {
             @Override
-            public void visitDependencies(@NotNull TaskDependencyResolveContext context) {
-                try {
-                    @SuppressWarnings("unchecked")
-                    Set<MavenArtifact> artifacts = (Set<MavenArtifact>)
-                            artifactsToBePublishedMethod.invoke(publication);
+            public void visitDependencies(TaskDependencyResolveContext taskDependencyResolveContext) {
+                taskDependencyResolveContext.execute(ArtifactSignTask.this);
+            }
 
-                    for (MavenArtifact artifact : artifacts) {
-                        if (artifact instanceof AbstractMavenArtifact) {
-                            if (!((AbstractMavenArtifact) artifact).shouldBePublished()) {
-                                continue;
-                            }
-                        }
-                        context.add(artifact.getBuildDependencies());
-                    }
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new RuntimeException(e);
-                }
+            @Override
+            public Set<? extends Task> getDependencies(@Nullable Task task) {
+                return Collections.singleton(ArtifactSignTask.this);
             }
         };
+
+        {
+            DomainObjectSet<MavenArtifact> metadataArtifacts = (DomainObjectSet<MavenArtifact>) DMP$metadataArtifacts.get(mPublication);
+            if (signerUnInitialized() == null) {
+                Project project = getProject();
+                project.afterEvaluate($$$ -> {
+                    register(mPublication.getArtifacts(), derived, TASK_THIS);
+                    register(metadataArtifacts, derived, TASK_THIS);
+                });
+            } else {
+                register(mPublication.getArtifacts(), derived, TASK_THIS);
+                register(metadataArtifacts, derived, TASK_THIS);
+            }
+        }
+        dependsOn(new TaskDependencyInternal() {
+            @Override
+            public void visitDependencies(TaskDependencyResolveContext taskDependencyResolveContext) {
+                for (PCArtifact artifact : signArtifacts) {
+                    taskDependencyResolveContext.add(artifact.delegate.getBuildDependencies());
+                }
+            }
+
+            @Override
+            public Set<? extends Task> getDependencies(@Nullable Task task) {
+                return Collections.emptySet();
+            }
+        });
     }
 
-    @Inject
-    public ArtifactSignTask(DefaultMavenPublication publication) {
-        this.publication = publication;
-        dependsOn(getMustRunAfter());
+    private void register(DomainObjectSet<MavenArtifact> artifacts, DomainObjectSet<MavenArtifact> derived, TaskDependencyInternal task) {
+        artifacts.all(artifact -> {
+            try {
+                ArtifactSigner artifactSigner = signerUnInitialized();
+                PCArtifact sign = new PCArtifact(
+                        (AbstractMavenArtifact) artifact,
+                        artifactSigner.signFile(
+                                getLogger(),
+                                artifact.getFile()
+                        ),
+                        artifactSigner.getSignExt(
+                                artifact.getFile()
+                        ),
+                        task
+                );
+                derived.add(sign);
+                signArtifacts.add(sign);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        artifacts.whenObjectRemoved(artifact -> {
+            Iterator<PCArtifact> artifactIterator = signArtifacts.iterator();
+            while (artifactIterator.hasNext()) {
+                PCArtifact signFile = artifactIterator.next();
+                if (signFile.delegate.equals(artifact)) {
+                    mp.removeDerivedArtifact(signFile);
+                    artifactIterator.remove();
+                }
+            }
+        });
     }
 
     protected ArtifactSigner signer() throws Exception {
+        ArtifactSigner signer = signerUnInitialized();
+        if (signer != null) signer.initialize(getProject());
+        return signer;
+    }
+
+    protected ArtifactSigner signerUnInitialized() throws Exception {
         Logger logger = getLogger();
         PublicationSignExtension signExtension = getProject().getExtensions().getByType(PublicationSignExtension.class);
         ArtifactSigner signer = signExtension.newGpgSigner(getProject());
@@ -98,33 +156,26 @@ public class ArtifactSignTask extends DefaultTask {
         if (logger.isInfoEnabled()) {
             logger.info("Using gpg signer: " + signer);
         }
-        signer.initialize(getProject());
         return signer;
     }
 
     @TaskAction
-    protected void invoke() throws Exception {
-        postInit();
-        Logger logger = getLogger();
-        if (logger.isInfoEnabled()) {
-            logger.info("Signing artifacts for " + publication.getName());
-        }
+    protected void execute() throws Throwable {
         ArtifactSigner signer = signer();
+        Logger logger = getLogger();
         if (signer == null) {
             logger.error("GPG Signer not found. Skip");
             return;
         }
 
-        if (signedArtifacts == null) {
-            throw new RuntimeException("Internal error: signedArtifacts not setup.");
-        }
-        if (publicationArtifactSet == null) {
-            throw new RuntimeException("Internal error: publicationArtifactSet not setup");
+        if (signArtifacts.isEmpty()) {
+            logger.warn("Nothing to sign");
+            return;
         }
 
-        for (MavenArtifact artifact : publicationArtifactSet) {
+        for (PCArtifact artifact : signArtifacts) {
 
-            File artifactFile = artifact.getFile();
+            File artifactFile = artifact.delegate.getFile();
             if (logger.isInfoEnabled()) {
                 logger.info("Signing " + artifactFile);
             }
@@ -138,59 +189,20 @@ public class ArtifactSignTask extends DefaultTask {
     }
 
     @InputFiles
-    public FileCollection getSources() {
-        return this.publicationArtifactSet.getFiles();
+    protected Set<File> getSources() {
+        HashSet<File> src = new HashSet<>();
+        for (PCArtifact artifact : signArtifacts) {
+            src.add(artifact.delegate.getFile());
+        }
+        return src;
     }
-
-    private final Set<File> signatures = new HashSet<>();
 
     @OutputFiles
-    public Set<File> getSignatures() throws Exception {
-        postInit();
-        return signatures;
-    }
-
-    private void postInit() throws Exception {
-        if (postInit) return;
-        postInit = true;
-        ArtifactSigner signer = signer();
-        if(signer == null) return;
-
-        for (MavenArtifact artifact : publicationArtifactSet) {
-            ArtifactSigner.SignResult sf = signer.getSignFile(artifact.getFile());
-            if (sf != null) {
-                signedArtifacts.add(new SignedMavenArtifact(
-                        artifact,
-                        TaskDependencyInternal.EMPTY,
-                        sf
-                ));
-                signatures.add(sf.getSignFile());
-            }
+    protected Set<File> getOuts() {
+        HashSet<File> src = new HashSet<>();
+        for (PCArtifact artifact : signArtifacts) {
+            src.add(artifact.getFile());
         }
-    }
-
-    public static void setup(Project project, DefaultMavenPublication publication) {
-        TaskProvider<ArtifactSignTask> provider = project.getTasks().register(
-                "signArtifactsFor" + Capitalize.capitalize(publication.getName()) + "Publication",
-                ArtifactSignTask.class, publication
-        );
-        TaskProvider<ArtifactSignTask> provider2 = project.getTasks().register(
-                "signMetadataFor" + Capitalize.capitalize(publication.getName()) + "Publication",
-                ArtifactSignTask.class, publication
-        );
-        provider.configure(task -> task.setGroup("publishing"));
-        provider2.configure(task -> task.setGroup("publishing"));
-        if (publication instanceof MPMavenPublication) {
-            ((MPMavenPublication) publication).completeSignArtifactTask(provider.get(), provider2.get());
-        }
-    }
-
-
-    public void hookArtifacts(
-            DefaultPublicationArtifactSet<SignedMavenArtifact> signedArtifacts,
-            PublicationArtifactSet<?> publicationArtifactSet
-    ) {
-        this.signedArtifacts = signedArtifacts;
-        this.publicationArtifactSet = (PublicationArtifactSet<? extends MavenArtifact>) publicationArtifactSet;
+        return src;
     }
 }

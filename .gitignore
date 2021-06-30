@@ -2,5 +2,6 @@
 build/
 .gradle
 /testing
+!/testing/testing-keys
 *.log
 

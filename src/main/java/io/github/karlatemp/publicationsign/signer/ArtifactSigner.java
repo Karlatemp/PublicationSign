@@ -19,6 +19,8 @@ import java.io.File;
 public interface ArtifactSigner {
     SignResult getSignFile(File file);
 
+    String getSignExt(File file);
+
     interface SignResult {
         File getArtifactFile();
 
@@ -28,6 +30,8 @@ public interface ArtifactSigner {
     }
 
     SignResult doSign(Logger logger, File artifactFile) throws Exception;
+
+    File signFile(Logger logger, File artifactFile);
 
     default void initialize(Project project) throws Exception {
     }

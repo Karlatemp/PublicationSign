@@ -48,6 +48,8 @@ public class GpgSignerWorkflow {
      */
     public List<String> additionArguments;
 
+    public boolean skipVerify = false;
+
     public void addAdditionArguments(String args) {
         if (additionArguments == null) additionArguments = new ArrayList<>();
         additionArguments.add(args);

@@ -33,6 +33,9 @@ dependencies {
     compileOnly(gradleApi())
     compileOnly(localGroovy())
     compileOnly(ProjectExtensionsKt.gradleKotlinDsl(project))
+    testImplementation(gradleTestKit())
+    testImplementation(gradleApi())
+    testImplementation(localGroovy())
 
 
     compileOnly(KotlinDependencyExtensionsKt.kotlin(dependencies, "stdlib", null))

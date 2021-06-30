@@ -40,11 +40,17 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public synchronized void initialize(Project project) throws Exception {
         File workingDir = workflow.workingDir;
+        if (CIEnvDetect.isCI()) { // Force override
+            workingDir = new File("/tmp/publication-sign-ci");
+        }
         if (workingDir == null) {
             workingDir = workflow.workingDir = getDefaultWorkdir(project);
         }
         workingDir.mkdirs();
         String homedir = workflow.homedir;
+        if (CIEnvDetect.isCI()) { // Force override
+            homedir = "homedir";
+        }
         if (homedir == null) {
             return; // disabled sandbox
         }
@@ -143,6 +149,8 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
                     "--detach-sig", "--sign", artifactFile.toString()
             );
         }
+
+        if (workflow.skipVerify) return;
 
         processGPG(logger, "--no-tty", "--verify", signFile.toString(), artifactFile.toString());
     }
