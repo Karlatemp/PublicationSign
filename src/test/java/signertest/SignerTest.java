@@ -49,7 +49,7 @@ public class SignerTest {
                         "}\n\n" +
                         "publicationSign {\n" +
                         "    setupWorkflow { workflow ->\n" +
-                        "        workflow.fastSetup(\"../testing-keys/key.pub\", \"../testing-keys/key.pri\")\n" +
+                        "        workflow.fastSetup(\"../testing-keys/keys.pub\", \"../testing-keys/keys.pri\")\n" +
                         "    }\n" +
                         "}\n",
                 StandardCharsets.UTF_8
