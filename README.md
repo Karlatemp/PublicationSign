@@ -11,7 +11,7 @@ System requirement: `gpg` installed
 ```groovy
 plugins {
     // Load this plugin first for resolve magic problems
-    id 'io.github.karlatemp.publication-sign' version '1.3.1'
+    id 'io.github.karlatemp.publication-sign' version '1.3.4'
     // other plugins
 }
 ```
@@ -54,7 +54,7 @@ plugins {
 
 configure<io.github.karlatemp.publicationsign.PublicationSignExtension> {
     setupWorkflow {
-        fastSetup("keys/key.pub", "keys/key.pri")
+        fastSetup("keys/keys.pub", "keys/keys.pri")
     }
 }
 ```
