@@ -30,7 +30,7 @@ public class SignerTest {
         wkDir.mkdirs();
         FilesKt.writeText(
                 new File(wkDir, "settings.gradle"),
-                "",
+                "rootProject.name = 'pst'",
                 StandardCharsets.UTF_8
         );
         FilesKt.writeText(
@@ -40,6 +40,8 @@ public class SignerTest {
                         "  id 'io.github.karlatemp.publication-sign'\n" +
                         "  id 'java'\n" +
                         "}\n\n" +
+                        "group 'io.github.karlatemp.pst'\n" +
+                        "version '1.0.0'\n" +
                         "publishing {\n" +
                         "    publications { container ->\n" +
                         "        register(\"main\", MavenPublication.class) { publication ->\n" +
@@ -57,7 +59,7 @@ public class SignerTest {
         );
         failOnFailed(GradleRunner.create()
                 .withProjectDir(wkDir)
-                .withArguments("--info", "signAllPublications", "--full-stacktrace")
+                .withArguments("--info", "publishToMavenLocal", "--full-stacktrace")
                 .withPluginClasspath()
                 .forwardOutput()
                 .build()
