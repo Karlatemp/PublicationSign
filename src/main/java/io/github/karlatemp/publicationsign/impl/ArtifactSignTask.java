@@ -40,9 +40,14 @@ import java.util.Set;
 public class ArtifactSignTask extends DefaultTask {
     private static Field DMP$metadataArtifacts;
     private static Field DMP$derivedArtifacts;
+    private static Field DMP$mainArtifacts;
     private final DefaultMavenPublication mp;
 
     private static void setupFields() throws Throwable {
+        if (DMP$mainArtifacts == null) {
+            DMP$mainArtifacts = DefaultMavenPublication.class.getDeclaredField("mainArtifacts");
+            DMP$mainArtifacts.setAccessible(true);
+        }
         if (DMP$derivedArtifacts == null) {
             DMP$derivedArtifacts = DefaultMavenPublication.class.getDeclaredField("derivedArtifacts");
             DMP$derivedArtifacts.setAccessible(true);
@@ -81,14 +86,15 @@ public class ArtifactSignTask extends DefaultTask {
 
         {
             DomainObjectSet<MavenArtifact> metadataArtifacts = (DomainObjectSet<MavenArtifact>) DMP$metadataArtifacts.get(mPublication);
+            DomainObjectSet<MavenArtifact> mainArtifacts = (DomainObjectSet<MavenArtifact>) DMP$mainArtifacts.get(mPublication);
             if (signerUnInitialized() == null) {
                 Project project = getProject();
                 project.afterEvaluate($$$ -> {
-                    register(mPublication.getArtifacts(), derived, TASK_THIS);
+                    register(mainArtifacts, derived, TASK_THIS);
                     register(metadataArtifacts, derived, TASK_THIS);
                 });
             } else {
-                register(mPublication.getArtifacts(), derived, TASK_THIS);
+                register(mainArtifacts, derived, TASK_THIS);
                 register(metadataArtifacts, derived, TASK_THIS);
             }
         }
