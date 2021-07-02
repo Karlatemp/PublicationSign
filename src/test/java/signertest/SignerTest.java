@@ -74,6 +74,7 @@ public class SignerTest {
                 .build();
         failOnFailed(rerun);
         Assertions.assertTrue(rerun.getOutput().contains("Task :signPublicationMain UP-TO-DATE"));
+        throw new RuntimeException("Test failed");
     }
 
     private static void failOnFailed(BuildResult signAllPublications) {
