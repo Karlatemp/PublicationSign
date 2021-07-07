@@ -42,10 +42,12 @@ public class SignerTest {
                         "}\n\n" +
                         "group 'io.github.karlatemp.pst'\n" +
                         "version '1.0.0'\n" +
+                        "tasks.create('ghostJar', Jar.class) { enabled = false; archiveClassifier.set('saww') } \n" +
                         "publishing {\n" +
                         "    publications { container ->\n" +
                         "        register(\"main\", MavenPublication.class) { publication ->\n" +
                         "            publication.from(project.components.java)\n" +
+                        "            publication.artifact(project.tasks.getByName('ghostJar'))\n" +
                         "        }\n" +
                         "   }\n" +
                         "}\n\n" +

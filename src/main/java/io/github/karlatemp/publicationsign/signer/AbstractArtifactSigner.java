@@ -83,6 +83,12 @@ public abstract class AbstractArtifactSigner implements ArtifactSigner {
 
     @Override
     public SignResult doSign(Logger logger, File artifactFile) throws Exception {
+        if (!artifactFile.isFile()) {
+            if (logger.isWarnEnabled()) {
+                logger.warn("Artifact " + artifactFile.getPath() + " not exists. Skip sign.");
+            }
+            return null;
+        }
         String ext = getSignFileExtension(artifactFile);
         File signFile = getSignFile(artifactFile, ext);
         if (signFile == null) return null;

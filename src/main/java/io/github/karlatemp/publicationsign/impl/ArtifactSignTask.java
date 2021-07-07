@@ -187,7 +187,12 @@ public class ArtifactSignTask extends DefaultTask {
             }
 
             ArtifactSigner.SignResult result = signer.doSign(logger, artifactFile);
-            if (result == null) continue;
+            if (result == null) {
+                if (logger.isErrorEnabled()) {
+                    logger.error("Failed to sign " + artifactFile.getPath());
+                }
+                continue;
+            }
             if (logger.isDebugEnabled()) {
                 logger.debug("Added signed artifact " + result.getSignFile());
             }
@@ -198,7 +203,10 @@ public class ArtifactSignTask extends DefaultTask {
     protected Set<File> getSources() {
         HashSet<File> src = new HashSet<>();
         for (PCArtifact artifact : signArtifacts) {
-            src.add(artifact.delegate.getFile());
+            File file = artifact.delegate.getFile();
+            if (file.exists()) {
+                src.add(file);
+            }
         }
         return src;
     }
@@ -207,7 +215,9 @@ public class ArtifactSignTask extends DefaultTask {
     protected Set<File> getOuts() {
         HashSet<File> src = new HashSet<>();
         for (PCArtifact artifact : signArtifacts) {
-            src.add(artifact.getFile());
+            if (artifact.delegate.getFile().exists()) {
+                src.add(artifact.getFile());
+            }
         }
         return src;
     }
