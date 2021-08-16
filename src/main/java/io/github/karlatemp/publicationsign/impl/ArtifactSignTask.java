@@ -113,10 +113,32 @@ public class ArtifactSignTask extends DefaultTask {
         });
     }
 
+    private static String artifactToString(Project project, MavenArtifact artifact) {
+        StringBuilder result = new StringBuilder();
+        result.append(project.getName());
+        String classifier = artifact.getClassifier();
+        if (classifier != null) {
+            result.append('-').append(classifier);
+        }
+        result.append('-').append(project.getVersion());
+        String extension = artifact.getExtension();
+        if (extension != null) {
+            result.append('.').append(extension);
+        }
+        return result.toString();
+    }
+
     private void register(DomainObjectSet<MavenArtifact> artifacts, DomainObjectSet<MavenArtifact> derived, TaskDependencyInternal task) {
         artifacts.all(artifact -> {
             try {
                 ArtifactSigner artifactSigner = signerUnInitialized();
+                if (artifactSigner == null) {
+                    Logger logger = getLogger();
+                    if (logger.isInfoEnabled()) {
+                        logger.info("Failed register " + artifactToString(getProject(), artifact) + " for signing: signer not found.");
+                    }
+                    return;
+                }
                 PCArtifact sign = new PCArtifact(
                         (AbstractMavenArtifact) artifact,
                         artifactSigner.signFile(

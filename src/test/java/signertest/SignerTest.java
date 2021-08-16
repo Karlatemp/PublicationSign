@@ -11,7 +11,6 @@
 
 package signertest;
 
-import kotlin.io.FilesKt;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
@@ -20,45 +19,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class SignerTest {
     @Test
     public void runTest() throws Exception {
         File wkDir = new File("testing/tv1");
-        wkDir.mkdirs();
-        FilesKt.writeText(
-                new File(wkDir, "settings.gradle"),
-                "rootProject.name = 'pst'",
-                StandardCharsets.UTF_8
-        );
-        FilesKt.writeText(
-                new File(wkDir, "build.gradle"),
-                "plugins {\n" +
-                        "  id 'maven-publish'\n" +
-                        "  id 'io.github.karlatemp.publication-sign'\n" +
-                        "  id 'java'\n" +
-                        "}\n\n" +
-                        "group 'io.github.karlatemp.pst'\n" +
-                        "version '1.0.0'\n" +
-                        "tasks.create('ghostJar', Jar.class) { enabled = false; archiveClassifier.set('saww') } \n" +
-                        "publishing {\n" +
-                        "    publications { container ->\n" +
-                        "        register(\"main\", MavenPublication.class) { publication ->\n" +
-                        "            publication.from(project.components.java)\n" +
-                        "            publication.artifact(project.tasks.getByName('ghostJar'))\n" +
-                        "        }\n" +
-                        "   }\n" +
-                        "}\n\n" +
-                        "publicationSign {\n" +
-                        "    setupWorkflow { workflow ->\n" +
-                        "        workflow.addKey(new File(project.projectDir.getParentFile(), \"testing-keys/keys.pub\"))\n" +
-                        "        workflow.addKey(new File(project.projectDir.getParentFile(), \"testing-keys/keys.pri\"))\n" +
-                        "    }\n" +
-                        "}\n",
-                StandardCharsets.UTF_8
-        );
         failOnFailed(GradleRunner.create()
                 .withProjectDir(wkDir)
                 .withArguments("--info", "publishToMavenLocal", "--full-stacktrace")
@@ -76,6 +42,18 @@ public class SignerTest {
                 .build();
         failOnFailed(rerun);
         Assertions.assertTrue(rerun.getOutput().contains("Task :signPublicationMain UP-TO-DATE"));
+    }
+
+    @Test
+    public void runTestWithNoSigner() throws Exception {
+        File wkDir = new File("testing/tv2");
+        failOnFailed(GradleRunner.create()
+                .withProjectDir(wkDir)
+                .withArguments("--info", "publishToMavenLocal", "--full-stacktrace")
+                .withPluginClasspath()
+                .forwardOutput()
+                .build()
+        );
     }
 
     private static void failOnFailed(BuildResult signAllPublications) {

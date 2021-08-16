@@ -1,0 +1,19 @@
+plugins {
+  id 'maven-publish'
+  id 'io.github.karlatemp.publication-sign'
+  id 'java'
+}
+
+group 'io.github.karlatemp.pst'
+version '1.0.0'
+
+tasks.create('ghostJar', Jar.class) { enabled = false; archiveClassifier.set('saww') }
+
+publishing {
+    publications { container ->
+        register("main", MavenPublication.class) { publication ->
+            publication.from(project.components.java)
+            publication.artifact(project.tasks.getByName('ghostJar'))
+        }
+   }
+}
