@@ -16,7 +16,7 @@ import org.gradle.api.publish.maven.internal.artifact.AbstractMavenArtifact;
 
 import java.io.File;
 
-public class PCArtifact extends AbstractMavenArtifact {
+public class PCArtifact extends AbstractMavenArtifact implements Patch_g7_2_MavenArtifact {
     final AbstractMavenArtifact delegate;
     private final File signFile;
     private final String signExt;
@@ -50,7 +50,7 @@ public class PCArtifact extends AbstractMavenArtifact {
     }
 
     @Override
-    protected TaskDependencyInternal getDefaultBuildDependencies() {
+    public TaskDependencyInternal getDefaultBuildDependencies() {
         return task;
     }
 

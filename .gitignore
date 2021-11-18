@@ -3,5 +3,9 @@ build/
 .gradle
 /testing
 !/testing/testing-keys
+!/testing/template-*
+/key-gen-workflow
+/keys.pri
+/keys.pub
 *.log
 

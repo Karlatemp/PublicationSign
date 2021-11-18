@@ -20,5 +20,6 @@ publicationSign {
     setupWorkflow { workflow ->
         workflow.addKey(new File(project.projectDir.getParentFile(), "testing-keys/keys.pub"))
         workflow.addKey(new File(project.projectDir.getParentFile(), "testing-keys/keys.pri"))
+        workflow.workingDir = new File(project.projectDir.getParentFile(), "testing-keys")
     }
 }
