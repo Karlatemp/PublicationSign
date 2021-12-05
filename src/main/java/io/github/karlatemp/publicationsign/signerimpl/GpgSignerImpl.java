@@ -26,28 +26,67 @@ import java.util.*;
 public class GpgSignerImpl extends AbstractArtifactSigner {
     private final GpgSignerWorkflow workflow;
 
+    private static File createCiTmp() throws Exception {
+        File tmp;
+        String customTmp = System.getProperty("publication-sign.workingDir");
+        if (customTmp != null) {
+            tmp = new File(customTmp);
+            if (!tmp.mkdirs()) {
+                throw new IllegalStateException("Failed to create " + customTmp + " (JvmProp publication-sign.workingDir)");
+            }
+            return tmp;
+        }
+        customTmp = System.getenv("PUBLICATION_SIGN_WORKING_DIR");
+        if (customTmp != null) {
+            tmp = new File(customTmp);
+            if (!tmp.mkdirs()) {
+                throw new IllegalStateException("Failed to create " + customTmp + " (SysEnv PUBLICATION_SIGN_WORKING_DIR)");
+            }
+            return tmp;
+        }
+        if (!CIEnvDetect.isCI()) return null;
+        tmp = new File("/tmp/publication-sign-ci");
+        if (tmp.mkdirs()) return tmp;
+
+        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+            // GitHub WindowsServer
+            tmp = new File("D:/a/psign");
+            if (tmp.mkdirs()) return tmp;
+        }
+
+        tmp = File.createTempFile("psign", null);
+        tmp.delete();
+        if (tmp.mkdirs()) return tmp;
+        throw new IllegalStateException("Failed to create a temp directory for ci");
+    }
+
     public GpgSignerImpl(GpgSignerWorkflow workflow) {
         this.workflow = workflow;
     }
 
     public static File getDefaultWorkdir(Project project) {
-        if (System.getenv("WORK_IN_CI") != null) {
-            return new File("/tmp/ci", project.getName()).getAbsoluteFile();
-        }
         return new File(project.getBuildDir(), "gpg-sign");
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public synchronized void initialize(Project project) throws Exception {
         File workingDir = workflow.workingDir;
-        if (CIEnvDetect.isCI()) { // Force override
-            workingDir = new File("/tmp/publication-sign-ci");
+        {
+            File tmp = createCiTmp();
+            if (tmp != null) {
+                workingDir = tmp;
+            }
         }
         if (workingDir == null) {
             workingDir = getDefaultWorkdir(project);
         }
         workflow.workingDir = workingDir;
         workingDir.mkdirs();
+        if (!workingDir.isDirectory()) {
+            throw new IllegalStateException(
+                    "Working dir <" + workingDir + "> not a directory. Please specify by publication-sign.workingDir / PUBLICATION_SIGN_WORKING_DIR"
+            );
+        }
         String homedir = workflow.homedir;
         if (CIEnvDetect.isCI()) { // Force override
             homedir = "homedir";
