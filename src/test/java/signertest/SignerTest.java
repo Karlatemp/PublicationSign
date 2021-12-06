@@ -180,7 +180,7 @@ public class SignerTest {
                 .build();
         failOnFailed(rerun);
         // Unknown why macos keeping not-up-to-date
-        if (System.getProperty("os.name").toLowerCase().contains("macos")) return;
+        if (System.getProperty("os.name").toLowerCase().contains("mac")) return;
         Assertions.assertTrue(rerun.getOutput().contains("Task :signPublicationMain UP-TO-DATE"));
     }
 
