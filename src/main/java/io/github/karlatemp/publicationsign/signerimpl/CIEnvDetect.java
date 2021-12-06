@@ -14,6 +14,9 @@ package io.github.karlatemp.publicationsign.signerimpl;
 @SuppressWarnings("RedundantIfStatement")
 public class CIEnvDetect {
     public static boolean isCI() {
+        if (Boolean.parseBoolean(System.getenv("NOT_IN_CI"))) {
+            return false;
+        }
         if (Boolean.parseBoolean(System.getenv("CI")))
             return true;
         if (System.getenv("GITHUB_RUN_ID") != null) return true;

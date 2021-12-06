@@ -26,7 +26,7 @@ import java.util.*;
 public class GpgSignerImpl extends AbstractArtifactSigner {
     private final GpgSignerWorkflow workflow;
 
-    private static File createCiTmp() throws Exception {
+    private static File createCiTmp(Logger logger) throws Exception {
         File tmp;
         String customTmp = System.getProperty("publication-sign.workingDir");
         if (customTmp != null) {
@@ -58,6 +58,13 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
         if (os.contains("mac")) {
             tmp = new File("/Users/runner/work/psign");
             if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
+            execCommand(logger, null, null, Arrays.asList(
+                    "sudo", "mkdir", "/Users/runner/work/psign"
+            ));
+            execCommand(logger, null, null, Arrays.asList(
+                    "sudo", "chown", "runner", "/Users/runner/work/psign"
+            ));
+            if (tmp.isDirectory()) return tmp;
         }
 
         tmp = File.createTempFile("psign", null);
@@ -76,9 +83,10 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public synchronized void initialize(Project project) throws Exception {
+        Logger logger = project.getLogger();
         File workingDir = workflow.workingDir;
         {
-            File tmp = createCiTmp();
+            File tmp = createCiTmp(logger);
             if (tmp != null) {
                 workingDir = tmp;
             }
@@ -102,7 +110,6 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
             return; // disabled sandbox
         }
         File homedirFile = new File(workingDir, homedir);
-        Logger logger = project.getLogger();
         File pubringkbx = new File(homedirFile, "pubring.kbx");
         if (pubringkbx.isFile()) {
             return;
@@ -141,17 +148,24 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
         }
 
         cmd0.addAll(Arrays.asList(cmd));
+        File out = new File(workflow.workingDir, "gpg-" + System.currentTimeMillis() + "-" + UUID.randomUUID() + ".log");
+        out.createNewFile();
+        execCommand(logger, workflow.workingDir, out, cmd0);
+    }
+
+    private static void execCommand(Logger logger, File workingDir, File out, List<String> cmd0) throws Exception {
         if (logger != null && logger.isInfoEnabled()) {
             logger.info("Processing `" + String.join(" ", cmd0) + "`");
         }
-        File out = new File(workflow.workingDir, "gpg-" + System.currentTimeMillis() + "-" + UUID.randomUUID() + ".log");
-        out.createNewFile();
-
-        int response = new ProcessBuilder()
-                .directory(workflow.workingDir)
-                .command(cmd0)
-                .redirectError(out)
-                .redirectOutput(out)
+        ProcessBuilder processBuilder = new ProcessBuilder()
+                .command(cmd0);
+        if (workingDir != null) {
+            processBuilder.directory(workingDir);
+        }
+        if (out == null) {
+            out = File.createTempFile("tmp-psrun", ".log");
+        }
+        int response = processBuilder
                 .start()
                 .waitFor();
         if ((logger != null && logger.isInfoEnabled()) || response != 0) {
