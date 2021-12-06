@@ -45,13 +45,13 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
             return tmp;
         }
         if (!CIEnvDetect.isCI()) return null;
-        tmp = new File("/tmp/publication-sign-ci");
-        if (tmp.mkdirs()) return tmp;
+        tmp = new File("/tmp/publication-sign-ci").getAbsoluteFile();
+        if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
 
         if (System.getProperty("os.name").toLowerCase().contains("windows")) {
             // GitHub WindowsServer
             tmp = new File("D:/a/psign");
-            if (tmp.mkdirs()) return tmp;
+            if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
         }
 
         tmp = File.createTempFile("psign", null);
