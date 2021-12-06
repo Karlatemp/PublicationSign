@@ -28,6 +28,13 @@ import java.util.*;
 public class GpgSignerImpl extends AbstractArtifactSigner {
     private final GpgSignerWorkflow workflow;
 
+    private static boolean mkdir1(File dir) {
+        if (dir.isDirectory()) return true;
+        if (dir.isFile()) return false;
+        dir.mkdirs();
+        return dir.isDirectory();
+    }
+
     private static File createCiTmp(Project project, Logger logger) throws Exception {
         File tmp;
         String customTmp = System.getProperty("publication-sign.workingDir");
@@ -53,24 +60,25 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
         String project_sha1 = String.format("%040x", new BigInteger(1, digest.digest()));
 
         tmp = new File("/tmp/ps_" + project_sha1).getAbsoluteFile();
-        if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
+        if (mkdir1(tmp)) return tmp;
 
         String os = System.getProperty("os.name").toLowerCase();
 
         if (os.contains("windows")) {
             // GitHub WindowsServer
             tmp = new File("D:/a/psign_" + project_sha1);
-            if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
+            if (mkdir1(tmp)) return tmp;
+
         }
         if (os.contains("mac")) {
             tmp = new File("/Users/runner/work/p_" + project_sha1);
-            if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
-            if (tmp.isDirectory()) return tmp;
+            if (mkdir1(tmp)) return tmp;
         }
 
         tmp = File.createTempFile("psign", null);
         tmp.delete();
         if (tmp.mkdirs()) return tmp;
+        if (tmp.isDirectory()) return tmp;
         throw new IllegalStateException("Failed to create a temp directory for ci");
     }
 
