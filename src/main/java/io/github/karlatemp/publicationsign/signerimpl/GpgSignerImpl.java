@@ -20,13 +20,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 
 public class GpgSignerImpl extends AbstractArtifactSigner {
     private final GpgSignerWorkflow workflow;
 
-    private static File createCiTmp(Logger logger) throws Exception {
+    private static File createCiTmp(Project project, Logger logger) throws Exception {
         File tmp;
         String customTmp = System.getProperty("publication-sign.workingDir");
         if (customTmp != null) {
@@ -45,24 +47,29 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
             return tmp;
         }
         if (!CIEnvDetect.isCI()) return null;
-        tmp = new File("/tmp/publication-sign-ci").getAbsoluteFile();
+        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+        digest.reset();
+        digest.update(project.getProjectDir().getAbsolutePath().getBytes(StandardCharsets.UTF_8));
+        String project_sha1 = String.format("%040x", new BigInteger(1, digest.digest()));
+
+        tmp = new File("/tmp/ps_" + project_sha1).getAbsoluteFile();
         if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
 
         String os = System.getProperty("os.name").toLowerCase();
 
         if (os.contains("windows")) {
             // GitHub WindowsServer
-            tmp = new File("D:/a/psign");
+            tmp = new File("D:/a/psign_" + project_sha1);
             if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
         }
         if (os.contains("mac")) {
-            tmp = new File("/Users/runner/work/psign");
+            tmp = new File("/Users/runner/work/p_" + project_sha1);
             if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
             execCommand(logger, null, null, Arrays.asList(
-                    "sudo", "mkdir", "/Users/runner/work/psign"
+                    "sudo", "mkdir", tmp.getPath()
             ));
             execCommand(logger, null, null, Arrays.asList(
-                    "sudo", "chown", "runner", "/Users/runner/work/psign"
+                    "sudo", "chown", "runner", tmp.getPath()
             ));
             if (tmp.isDirectory()) return tmp;
         }
@@ -86,7 +93,7 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
         Logger logger = project.getLogger();
         File workingDir = workflow.workingDir;
         {
-            File tmp = createCiTmp(logger);
+            File tmp = createCiTmp(project, logger);
             if (tmp != null) {
                 workingDir = tmp;
             }
