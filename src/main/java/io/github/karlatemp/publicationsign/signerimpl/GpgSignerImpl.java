@@ -65,12 +65,6 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
         if (os.contains("mac")) {
             tmp = new File("/Users/runner/work/p_" + project_sha1);
             if (tmp.mkdirs() && tmp.isDirectory()) return tmp;
-            execCommand(logger, null, null, Arrays.asList(
-                    "sudo", "mkdir", tmp.getPath()
-            ));
-            execCommand(logger, null, null, Arrays.asList(
-                    "sudo", "chown", "runner", tmp.getPath()
-            ));
             if (tmp.isDirectory()) return tmp;
         }
 
