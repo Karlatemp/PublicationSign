@@ -16,23 +16,34 @@ import io.github.karlatemp.publicationsign.signer.AbstractArtifactSigner;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.util.*;
+
+import static java.nio.file.attribute.PosixFilePermission.*;
 
 public class GpgSignerImpl extends AbstractArtifactSigner {
     private final GpgSignerWorkflow workflow;
 
+    static final FileAttribute<Set<PosixFilePermission>> dirPermissions =
+            PosixFilePermissions.asFileAttribute(EnumSet
+                    .of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE));
+
     private static boolean mkdir1(File dir) {
         if (dir.isDirectory()) return true;
         if (dir.isFile()) return false;
-        dir.mkdirs();
-        return dir.isDirectory();
+        try {
+            Files.createDirectory(dir.toPath(), dirPermissions);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private static File createCiTmp(Project project, Logger logger) throws Exception {
@@ -104,7 +115,7 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
             workingDir = getDefaultWorkdir(project);
         }
         workflow.workingDir = workingDir;
-        workingDir.mkdirs();
+        mkdir1(workingDir);
         if (!workingDir.isDirectory()) {
             throw new IllegalStateException(
                     "Working dir <" + workingDir + "> not a directory. Please specify by publication-sign.workingDir / PUBLICATION_SIGN_WORKING_DIR"
@@ -123,7 +134,7 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
         if (pubringkbx.isFile()) {
             return;
         }
-        homedirFile.mkdirs();
+        mkdir1(homedirFile);
         // "--batch", "--import"
         Collection<File> keys = workflow.keys;
         if (keys == null || keys.isEmpty()) {
@@ -175,6 +186,8 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
             out = File.createTempFile("tmp-psrun", ".log");
         }
         int response = processBuilder
+                .redirectError(out)
+                .redirectOutput(out)
                 .start()
                 .waitFor();
         if ((logger != null && logger.isInfoEnabled()) || response != 0) {
