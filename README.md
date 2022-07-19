@@ -98,3 +98,49 @@ jobs:
 ## Publish
 
 `./gradlew publish`/ `./gradlew publishToMavenLocal`
+
+-----------------------------------------------------------
+
+Implementation details:
+
+## Local Signing Environment Setup
+
+
+In `setupWorkflow { fastSetup() }`, arguments that provided to `fastSetup`(`publicKey` & `privateKey`) will be resolved by `Project.file()`.
+
+When both of `publicKey` and `privateKey` exists, PS will run in CI mode, otherwise run in user mode.
+
+> You need setup a personal GPG key when PS running in user mode.
+>
+> You can use `gpg --list-secret-keys` to find your keys.
+>
+> References:
+> - [GitHub Docs: Generating a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)
+
+>
+> If you have multiple GPG keys, we recommand you to setup `signing.keyId` in `gradle.properties` of your personal gradle data directory (~/.gradle)
+>
+> `signing.keyId` can be found by executing `gpg --list-secret-keys`
+
+## CI Env improvement
+
+Sometimes you will receive a `GPG command response 2 != 0` error. It caused by GPG's data directory path length limit.
+
+It means you need your project build with a short path on CI.
+> Actually just need use `setupWorkflow { workingDir = new File("/tmp") }` to resolve it
+
+In order to deal with the situation, PS added some options to forcefully override user settings in `build.grade`
+
+- Check system property `publication-sign.workingDir`, force override GPG command working dir if available
+- Check system environment variable `PUBLICATION_SIGN_WORKING_DIR`, same as above
+- Check system environment variable `NOT_IN_CI`, interrupt if true (Continue to use user mode)
+- Check is CI env
+  - Check system environment variable `CI`, jump to AATD if true
+  - Jump to AAID if system envionment variable `GITHUB_RUN_ID` exists
+  - Interrupt if no rule matched (Continue to use user mode)
+- Allocate a new temp directory and override user settings (AATD)
+  - Calculate project sha1 by project directory path
+  - Use `/tmp/ps_$projectsha` if directory creation successed. (Windows) Driver name will be same as working directory of running process
+  - Use `D:/a/psign_$projectsha` if running on windows and directory creation successed
+  - Use `/Users/runner/work/p_$projectsha` if running on windows and directory creation successed
+  - Use JDK system api to create temp directory
