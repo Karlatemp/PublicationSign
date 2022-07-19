@@ -19,6 +19,7 @@ import org.gradle.api.logging.Logger;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
@@ -34,12 +35,14 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
     static final FileAttribute<Set<PosixFilePermission>> dirPermissions =
             PosixFilePermissions.asFileAttribute(EnumSet
                     .of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE));
+    private static final boolean isPosix =
+            FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
     private static boolean mkdir1(File dir) {
         if (dir.isDirectory()) return true;
         if (dir.isFile()) return false;
         try {
-            Files.createDirectory(dir.toPath(), dirPermissions);
+            Files.createDirectory(dir.toPath(), isPosix ? new FileAttribute[]{dirPermissions} : new FileAttribute[0]);
             return true;
         } catch (IOException e) {
             return false;
