@@ -11,7 +11,7 @@ System requirement: `gpg` installed
 ```groovy
 plugins {
     // Load this plugin first for resolve magic problems
-    id 'io.github.karlatemp.publication-sign' version '1.3.36'
+    id 'io.github.karlatemp.publication-sign' version '1.3.40'
     // other plugins
 }
 ```
