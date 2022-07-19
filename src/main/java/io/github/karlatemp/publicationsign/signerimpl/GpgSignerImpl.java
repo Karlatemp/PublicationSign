@@ -164,7 +164,7 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
 
     private static void execCommand(Logger logger, File workingDir, File out, List<String> cmd0) throws Exception {
         if (logger != null && logger.isInfoEnabled()) {
-            logger.info("Processing `" + String.join(" ", cmd0) + "`");
+            logger.info("Processing `" + String.join(" ", cmd0) + "`" + (workingDir == null ? "" : " in " + workingDir));
         }
         ProcessBuilder processBuilder = new ProcessBuilder()
                 .command(cmd0);
