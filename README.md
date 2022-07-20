@@ -1,6 +1,10 @@
 # Publication Sign
 
-A gradle plugin for sign publication artifacts. For fast deploy to maven central
+A gradle plugin for sign publication artifacts. For fast deploy to maven central.
+
+> This plugin will not help you configure your remote server location.
+>
+> PS only help you to sign all your artifacts with GPG
 
 System requirement: `gpg` installed
 
@@ -144,3 +148,14 @@ In order to deal with the situation, PS added some options to forcefully overrid
   - Use `D:/a/psign_$projectsha` if running on windows and directory creation successed
   - Use `/Users/runner/work/p_$projectsha` if running on windows and directory creation successed
   - Use JDK system api to create temp directory
+
+-----------------------------------------
+
+> Follow-up content is some content about other aspects.
+
+You may be thinking that even with PS, there are too many things to configure. Here are some secondary encapsulation of PS, which can complete the distribution of the project with less configuration.
+
+
+
+- [KasukuSakura/maven-center-publish](https://github.com/KasukuSakura/maven-center-publish): A GitHub action for fast setup maven central publishing
+- [Him188/maven-central-publish](https://github.com/Him188/maven-central-publish): (Gradle plugin) Configure publication to Maven Central for Gradle projects with minimal effort.
