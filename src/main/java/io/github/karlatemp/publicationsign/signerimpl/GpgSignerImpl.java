@@ -89,9 +89,8 @@ public class GpgSignerImpl extends AbstractArtifactSigner {
             if (mkdir1(tmp)) return tmp;
         }
 
-        tmp = File.createTempFile("psign", null);
-        tmp.delete();
-        if (tmp.mkdirs()) return tmp;
+        tmp = Files.createTempDirectory("psign").toFile();
+        if (true) return tmp;
         if (tmp.isDirectory()) return tmp;
         throw new IllegalStateException("Failed to create a temp directory for ci");
     }
