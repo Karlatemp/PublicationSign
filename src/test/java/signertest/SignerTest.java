@@ -12,8 +12,6 @@
 package signertest;
 
 import kotlin.io.FilesKt;
-import org.apache.groovy.util.SystemUtil;
-import org.apache.tools.ant.taskdefs.condition.Os;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
@@ -125,6 +123,7 @@ public class SignerTest {
         TestRunner[] runners = {
                 TestRunner.of("embedded", TestRunner.embedded()),
                 TestRunner.of("gradle 7.2", TestRunner.gradleVersion("7.2")),
+                TestRunner.of("gradle 8.2", TestRunner.gradleVersion("8.2")),
         };
 
         for (TestRunner runner : runners) {

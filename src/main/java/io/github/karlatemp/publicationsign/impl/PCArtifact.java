@@ -11,6 +11,7 @@
 
 package io.github.karlatemp.publicationsign.impl;
 
+import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory;
 import org.gradle.api.internal.tasks.TaskDependencyInternal;
 import org.gradle.api.publish.maven.internal.artifact.AbstractMavenArtifact;
 
@@ -28,6 +29,8 @@ public class PCArtifact extends AbstractMavenArtifact implements Patch_g7_2_Mave
             String signExt,
             TaskDependencyInternal task
     ) {
+        super(DefaultTaskDependencyFactory.withNoAssociatedProject());
+
         this.delegate = delegate;
         this.signFile = signFile;
         this.signExt = signExt;

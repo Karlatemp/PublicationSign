@@ -17,6 +17,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.DomainObjectSet;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.internal.tasks.DefaultTaskDependency;
 import org.gradle.api.internal.tasks.TaskDependencyInternal;
 import org.gradle.api.internal.tasks.TaskDependencyResolveContext;
 import org.gradle.api.logging.Logger;
@@ -27,6 +28,7 @@ import org.gradle.api.publish.maven.internal.publication.DefaultMavenPublication
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -72,14 +74,14 @@ public class ArtifactSignTask extends DefaultTask {
         DefaultMavenPublication mPublication = (DefaultMavenPublication) publication;
         this.mp = mPublication;
         DomainObjectSet<MavenArtifact> derived = (DomainObjectSet<MavenArtifact>) DMP$derivedArtifacts.get(mPublication);
-        TaskDependencyInternal TASK_THIS = new TaskDependencyInternal() {
+        TaskDependencyInternal TASK_THIS = new DefaultTaskDependency() {
             @Override
             public void visitDependencies(TaskDependencyResolveContext taskDependencyResolveContext) {
                 taskDependencyResolveContext.execute(ArtifactSignTask.this);
             }
 
             @Override
-            public Set<? extends Task> getDependencies(@Nullable Task task) {
+            public @NotNull Set<? extends Task> getDependencies(@Nullable Task task) {
                 return Collections.singleton(ArtifactSignTask.this);
             }
         };
@@ -98,9 +100,9 @@ public class ArtifactSignTask extends DefaultTask {
                 register(metadataArtifacts, derived, TASK_THIS);
             }
         }
-        dependsOn(new TaskDependencyInternal() {
+        dependsOn(new DefaultTaskDependency() {
             @Override
-            public void visitDependencies(TaskDependencyResolveContext taskDependencyResolveContext) {
+            public void visitDependencies(@NotNull TaskDependencyResolveContext taskDependencyResolveContext) {
                 for (PCArtifact artifact : signArtifacts) {
                     taskDependencyResolveContext.add(artifact.delegate.getBuildDependencies());
                 }
