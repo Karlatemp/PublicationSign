@@ -8,6 +8,9 @@ A gradle plugin for sign publication artifacts. For fast deploy to maven central
 
 System requirement: `gpg` installed
 
+> [!WARNING]
+> This plugin is deprecated. Please use [moe.karla.maven-publishing](https://github.com/Karlatemp/maven-central-publish) instead
+
 ## Configuration
 
 ### Plugin apply
