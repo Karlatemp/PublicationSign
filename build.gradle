@@ -13,15 +13,15 @@ import org.gradle.kotlin.dsl.KotlinDependencyExtensionsKt
 import org.gradle.kotlin.dsl.ProjectExtensionsKt
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.4.20'
+    id 'org.jetbrains.kotlin.jvm' version '1.8.21'
     id 'java-gradle-plugin'
-    id 'com.gradle.plugin-publish' version '0.15.0'
+    id 'com.gradle.plugin-publish' version '1.2.1'
     id 'java'
     id 'maven-publish'
 }
 
 group 'io.github.karlatemp'
-version '1.3.40'
+version '1.3.41'
 description 'Fast setup publication artifact sign'
 
 repositories {
@@ -29,7 +29,6 @@ repositories {
 }
 
 dependencies {
-
     compileOnly(gradleApi())
     compileOnly(localGroovy())
     compileOnly(ProjectExtensionsKt.gradleKotlinDsl(project))
@@ -46,7 +45,7 @@ dependencies {
         exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib"
     }
 
-    compile 'org.jetbrains:annotations:19.0.0'
+    compileOnly 'org.jetbrains:annotations:24.0.1'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
@@ -57,22 +56,18 @@ test {
 }
 
 gradlePlugin {
+    website = 'https://github.com/Karlatemp/PublicationSign'
+    vcsUrl = 'https://github.com/Karlatemp/PublicationSign.git'
     //noinspection GroovyAssignabilityCheck
     plugins {
         create("publicationSign") {
             id = "io.github.karlatemp.publication-sign"
             displayName = "Publication Sign"
-            description = project.description
+            description = 'A gradle for fast config publications artifact sign'
             implementationClass = "io.github.karlatemp.publicationsign.PublicationSignPlugin"
+            tags.addAll('publish', 'sign', 'maven')
         }
     }
-}
-
-pluginBundle {
-    website = 'https://github.com/Karlatemp/PublicationSign'
-    vcsUrl = 'https://github.com/Karlatemp/PublicationSign.git'
-    description = 'A gradle for fast config publications artifact sign'
-    tags = ['publish', 'sign', 'maven']
 }
 
 ({
